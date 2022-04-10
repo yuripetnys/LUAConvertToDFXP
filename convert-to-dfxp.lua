@@ -44,33 +44,23 @@ function is_value_on_table(v, t)
 end
 
 function show_styles_dialogue(subs)
-    config = {
-        {class="label", label="Select all dialogue styles", x=0, y=0}
-    }
-
+    config = { {class="label", label="Select all dialogue styles", x=0, y=0} }
+    
     y = 1
     for i = 1, #subs do
         if subs[i].class == "style" then
-            s = subs[i]
-            table.insert(config, {class="checkbox", name=s.name, label=s.name, hint=s.name, value=false, x=0, y=y})
+            table.insert(config, {class="checkbox", name=subs[i].name, label=subs[i].name, hint=subs[i].name, value=false, x=0, y=y} )
             y = y + 1
         end
     end
     
     btn, dialog_values = aegisub.dialog.display(config, {"OK", "Cancel"}, {["ok"] = "OK", ["cancel"] = "Cancel"})
-
-    if btn == "Cancel" then
-        aegisub.cancel()
-    end
+    if btn == "Cancel" then aegisub.cancel() end
     
     result = {}
-    for i = 1, #subs do
-        if subs[i].class == "style" then
-            s = subs[i]
-            if dialog_values[s.name] then
-                table.insert(result, s.name)
-            end
-            print(s.name)
+    for k, v in pairs(dialog_values) do
+        if v then
+            table.insert(result, k)
         end
     end
     
@@ -78,19 +68,32 @@ function show_styles_dialogue(subs)
 end
 
 function convert_to_dfxp(subs, sel)
+    -- Ask which styles are dialogue styles
     dialog_styles = show_styles_dialogue(subs)
 
     -- Ask where to save the file
     proposed_fn = aegisub.file_name():gsub("%.ass", ".dfxp")
-    file_name = aegisub.dialog.save("Export subtitle as DFXP", "asd", "", "DFXP Files (.dfxp)|*.dfxp", false)
+    file_name = aegisub.dialog.save("Export subtitle as DFXP", proposed_fn, "", "DFXP Files (.dfxp)|*.dfxp", false)
     if not file_name then aegisub.cancel() end
         
     -- Write header
     file = io.open(file_name, "w")
-    
-    file:write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<tt xmlns=\"http://www.w3.org/ns/ttml\" xmlns:ttm=\"http://www.w3.org/ns/ttml#metadata\" xmlns:tts=\"http://www.w3.org/ns/ttml#styling\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xml:lang=\"en\">\n  <head>\n    <metadata>\n      <ttm:title>")
-    file:write(proposed_fn)
-    file:write("</ttm:title>\n    </metadata>\n    <styling>\n      <style tts:fontStyle=\"normal\" tts:fontWeight=\"normal\" xml:id=\"s1\" tts:color=\"white\" tts:fontFamily=\"Arial\" tts:fontSize=\"100%\"></style>\n    </styling>\n    <layout>\n      <region tts:extent=\"80% 40%\" tts:origin=\"10% 10%\" tts:displayAlign=\"before\" tts:textAlign=\"center\" xml:id=\"topCenter\" />\n      <region tts:extent=\"80% 40%\" tts:origin=\"10% 50%\" tts:displayAlign=\"after\" tts:textAlign=\"center\" xml:id=\"bottomCenter\" />\n    </layout>\n  </head>\n  <body>\n    <div style=\"s1\" xml:id=\"d1\">\n")
+    file:write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+    file:write("<tt xmlns=\"http://www.w3.org/ns/ttml\" xmlns:ttm=\"http://www.w3.org/ns/ttml#metadata\" xmlns:tts=\"http://www.w3.org/ns/ttml#styling\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xml:lang=\"en\">\n")
+    file:write("  <head>\n")
+    file:write("    <metadata>\n")
+    file:write("      <ttm:title>" .. file_name .. "</ttm:title>\n")
+    file:write("    </metadata>\n")
+    file:write("    <styling>\n")
+    file:write("      <style tts:fontStyle=\"normal\" tts:fontWeight=\"normal\" xml:id=\"s1\" tts:color=\"white\" tts:fontFamily=\"Arial\" tts:fontSize=\"100%\"></style>\n")
+    file:write("    </styling>\n")
+    file:write("    <layout>\n")
+    file:write("      <region tts:extent=\"80% 40%\" tts:origin=\"10% 10%\" tts:displayAlign=\"before\" tts:textAlign=\"center\" xml:id=\"topCenter\" />\n")
+    file:write("      <region tts:extent=\"80% 40%\" tts:origin=\"10% 50%\" tts:displayAlign=\"after\" tts:textAlign=\"center\" xml:id=\"bottomCenter\" />\n")
+    file:write("    </layout>\n")
+    file:write("  </head>\n")
+    file:write("  <body>\n")
+    file:write("    <div style=\"s1\" xml:id=\"d1\">\n")
     
     -- Processes every dialogue line
     j = 1
@@ -124,7 +127,9 @@ function convert_to_dfxp(subs, sel)
     end
     
     -- Writes footer
-    file:write("    </div>\n  </body>\n</tt>")
+    file:write("    </div>\n")
+    file:write("  </body>\n")
+    file:write("</tt>")
     file:close()
 end
 
