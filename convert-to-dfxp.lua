@@ -19,7 +19,7 @@ unicode = require 'unicode'
 script_name = tr"Convert to DFXP"
 script_description = tr"Converts the script to DFXP"
 script_author = "Yuri Petnys"
-script_version = "1.01"
+script_version = "1.02"
 
 function format_time(t)
     ms = t % 1000
