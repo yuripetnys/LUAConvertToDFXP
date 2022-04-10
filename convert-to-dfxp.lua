@@ -43,33 +43,29 @@ function is_value_on_table(v, t)
     return false
 end
 
+STYLE_OPTION_ENUM = { "Dialogue", "Signs", "Ignore" }
+
 function show_styles_dialogue(subs)
-    config = { {class="label", label="Select all dialogue styles", x=0, y=0} }
+    config = { {class="label", label="Configure how to process each style:", x=0, y=0} }
     
     y = 1
     for i = 1, #subs do
         if subs[i].class == "style" then
-            table.insert(config, {class="checkbox", name=subs[i].name, label=subs[i].name, hint=subs[i].name, value=false, x=0, y=y} )
+            table.insert(config, {class="label", label=subs[i].name, x=0, y=y} )
+            table.insert(config, {class="dropdown", name=subs[i].name, items=STYLE_OPTION_ENUM, value=STYLE_OPTION_ENUM[1], x=1, y=y} )
             y = y + 1
         end
     end
     
-    btn, dialog_values = aegisub.dialog.display(config, {"OK", "Cancel"}, {["ok"] = "OK", ["cancel"] = "Cancel"})
+    btn, style_options = aegisub.dialog.display(config, {"OK", "Cancel"}, {["ok"] = "OK", ["cancel"] = "Cancel"})
     if btn == "Cancel" then aegisub.cancel() end
     
-    result = {}
-    for k, v in pairs(dialog_values) do
-        if v then
-            table.insert(result, k)
-        end
-    end
-    
-    return result
+    return style_options
 end
 
 function convert_to_dfxp(subs, sel)
     -- Ask which styles are dialogue styles
-    dialog_styles = show_styles_dialogue(subs)
+    style_options = show_styles_dialogue(subs)
 
     -- Ask where to save the file
     proposed_fn = aegisub.file_name():gsub("%.ass", ".dfxp")
@@ -110,19 +106,22 @@ function convert_to_dfxp(subs, sel)
             
             -- If it's a dialogue line, just convert linebreaks to <br/>
             -- If it's not dialogue, it's a typeset line - remove all line breaks and capitalize everything
-            if is_value_on_table(subs[i].style, dialog_styles) then
-                ptext = ptext:gsub("\\N","<br/>")
-                pregion = "bottomCenter"
-            else
-                ptext = ptext:gsub("\\N"," ")
-                ptext = ptext:gsub(" +"," ")
-                ptext = unicode.to_upper_case(ptext)
-                -- pregion = "topCenter"
-                pregion = "bottomCenter"
-            end
+            if style_options[subs[i].style] ~= "Ignore" then
+                if style_options[subs[i].style] == "Dialogue" then
+                    ptext = ptext:gsub("\\N","<br/>")
+                    pregion = "bottomCenter"
+                elseif style_options[subs[i].style] == "Signs" then
+                    ptext = ptext:gsub("\\N"," ")
+                    ptext = ptext:gsub(" +"," ")
+                    ptext = unicode.to_upper_case(ptext)
+                    -- pregion = "topCenter"
+                    pregion = "bottomCenter"
+                end
+                
+                file:write("      <p xml:id=\"p" .. j .. "\" begin=\"" .. pstart .. "\" end=\"" .. pend .. "\" region=\"" .. pregion .. "\">" .. ptext .. "</p>\n")
+                j = j + 1
+            end 
             
-            file:write("      <p xml:id=\"p" .. j .. "\" begin=\"" .. pstart .. "\" end=\"" .. pend .. "\" region=\"" .. pregion .. "\">" .. ptext .. "</p>\n")
-            j = j + 1
         end
     end
     
